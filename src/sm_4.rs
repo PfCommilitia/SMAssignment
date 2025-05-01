@@ -154,7 +154,7 @@ fn alter_group(input: &[u8; 16], key: &[u8; 16], mode: Mode) -> [u8; 16] {
   let round_keys = if mode == Mode::Encrypt {
     expand_key(key)
   } else {
-    expand_key(key).into_iter().rev().collect::<Vec<u32>>().try_into().unwrap()
+    expand_key(key).into_iter().rev().collect::<Vec<_>>().try_into().unwrap()
   };
 
   // 3. 使用轮密钥进行 32 轮迭代
@@ -165,7 +165,7 @@ fn alter_group(input: &[u8; 16], key: &[u8; 16], mode: Mode) -> [u8; 16] {
 
   // 4. 反序变换
 
-  result_array_u32 = result_array_u32.into_iter().rev().collect::<Vec<u32>>().try_into().unwrap();
+  result_array_u32 = result_array_u32.into_iter().rev().collect::<Vec<_>>().try_into().unwrap();
 
   // 5. 转换数据返回
 
@@ -273,10 +273,8 @@ fn t_alter_s(input: u32) -> u32 {
 fn ita(input: u32) -> u32 {
   let bytes = input.to_be_bytes();
 
-  let b_bytes = bytes
-    .iter()
-    .map(|item| SBOX[(*item as usize) / 16][(*item as usize) % 16])
-    .collect::<Vec<u8>>();
+  let b_bytes =
+    bytes.iter().map(|item| SBOX[(*item as usize) / 16][(*item as usize) % 16]).collect::<Vec<_>>();
 
   (b_bytes[0] as u32) << 24
     | (b_bytes[1] as u32) << 16
