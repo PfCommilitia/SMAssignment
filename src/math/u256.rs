@@ -1,15 +1,19 @@
-use std::ops;
-use std::cmp;
+use std::{cmp, ops};
 
 #[derive(Copy, Clone)]
 pub struct U256([u64; 4]);
 
 impl U256 {
-  pub const MAX: Self = Self([0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff]);
-  pub const C1: Self = Self([0x0000000000000001, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000]);
-  pub const C0: Self = Self([0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000]);
-  pub const C64: Self = Self([0x0000000000000040, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000]);
-  pub const C256: Self = Self([0x0000000000000100, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000]);
+  pub const C0: Self =
+    Self([0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000]);
+  pub const C1: Self =
+    Self([0x0000000000000001, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000]);
+  pub const C256: Self =
+    Self([0x0000000000000100, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000]);
+  pub const C64: Self =
+    Self([0x0000000000000040, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000]);
+  pub const MAX: Self =
+    Self([0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff]);
 
   pub const fn new() -> Self {
     Self([0u64; 4])
@@ -17,75 +21,75 @@ impl U256 {
 
   pub const fn from_le_bytes(bytes: &[u8; 32]) -> Self {
     Self([
-      (bytes[0] as u64) |
-      (bytes[1] as u64) << 8 |
-      (bytes[2] as u64) << 16 |
-      (bytes[3] as u64) << 24 |
-      (bytes[4] as u64) << 32 |
-      (bytes[5] as u64) << 40 |
-      (bytes[6] as u64) << 48 |
-      (bytes[7] as u64) << 56,
-      (bytes[8] as u64) |
-      (bytes[9] as u64) << 8 |
-      (bytes[10] as u64) << 16 |
-      (bytes[11] as u64) << 24 |
-      (bytes[12] as u64) << 32 |
-      (bytes[13] as u64) << 40 |
-      (bytes[14] as u64) << 48 |
-      (bytes[15] as u64) << 56,
-      (bytes[16] as u64) |
-      (bytes[17] as u64) << 8 |
-      (bytes[18] as u64) << 16 |
-      (bytes[19] as u64) << 24 |
-      (bytes[20] as u64) << 32 |
-      (bytes[21] as u64) << 40 |
-      (bytes[22] as u64) << 48 |
-      (bytes[23] as u64) << 56,
-      (bytes[24] as u64) |
-      (bytes[25] as u64) << 8 |
-      (bytes[26] as u64) << 16 |
-      (bytes[27] as u64) << 24 |
-      (bytes[28] as u64) << 32 |
-      (bytes[29] as u64) << 40 |
-      (bytes[30] as u64) << 48 |
-      (bytes[31] as u64) << 56
+      (bytes[0] as u64)
+        | (bytes[1] as u64) << 8
+        | (bytes[2] as u64) << 16
+        | (bytes[3] as u64) << 24
+        | (bytes[4] as u64) << 32
+        | (bytes[5] as u64) << 40
+        | (bytes[6] as u64) << 48
+        | (bytes[7] as u64) << 56,
+      (bytes[8] as u64)
+        | (bytes[9] as u64) << 8
+        | (bytes[10] as u64) << 16
+        | (bytes[11] as u64) << 24
+        | (bytes[12] as u64) << 32
+        | (bytes[13] as u64) << 40
+        | (bytes[14] as u64) << 48
+        | (bytes[15] as u64) << 56,
+      (bytes[16] as u64)
+        | (bytes[17] as u64) << 8
+        | (bytes[18] as u64) << 16
+        | (bytes[19] as u64) << 24
+        | (bytes[20] as u64) << 32
+        | (bytes[21] as u64) << 40
+        | (bytes[22] as u64) << 48
+        | (bytes[23] as u64) << 56,
+      (bytes[24] as u64)
+        | (bytes[25] as u64) << 8
+        | (bytes[26] as u64) << 16
+        | (bytes[27] as u64) << 24
+        | (bytes[28] as u64) << 32
+        | (bytes[29] as u64) << 40
+        | (bytes[30] as u64) << 48
+        | (bytes[31] as u64) << 56
     ])
   }
 
   pub const fn from_be_bytes(bytes: &[u8; 32]) -> Self {
     Self([
-      (bytes[31] as u64) |
-      (bytes[30] as u64) << 8 |
-      (bytes[29] as u64) << 16 |
-      (bytes[28] as u64) << 24 |
-      (bytes[27] as u64) << 32 |
-      (bytes[26] as u64) << 40 |
-      (bytes[25] as u64) << 48 |
-      (bytes[24] as u64) << 56,
-      (bytes[23] as u64) |
-      (bytes[22] as u64) << 8 |
-      (bytes[21] as u64) << 16 |
-      (bytes[20] as u64) << 24 |
-      (bytes[19] as u64) << 32 |
-      (bytes[18] as u64) << 40 |
-      (bytes[17] as u64) << 48 |
-      (bytes[16] as u64) << 56,
-      (bytes[15] as u64) |
-      (bytes[14] as u64) << 8 |
-      (bytes[13] as u64) << 16 |
-      (bytes[12] as u64) << 24 |
-      (bytes[11] as u64) << 32 |
-      (bytes[10] as u64) << 40 |
-      (bytes[9] as u64) << 48 |
-      (bytes[8] as u64) << 56,
-      (bytes[7] as u64) |
-      (bytes[6] as u64) << 8 |
-      (bytes[5] as u64) << 16 |
-      (bytes[4] as u64) << 24 |
-      (bytes[3] as u64) << 32 |
-      (bytes[2] as u64) << 40 |
-      (bytes[1] as u64) << 48 |
-      (bytes[0] as u64) << 56
+      (bytes[31] as u64)
+        | (bytes[30] as u64) << 8
+        | (bytes[29] as u64) << 16
+        | (bytes[28] as u64) << 24
+        | (bytes[27] as u64) << 32
+        | (bytes[26] as u64) << 40
+        | (bytes[25] as u64) << 48
+        | (bytes[24] as u64) << 56,
+      (bytes[23] as u64)
+        | (bytes[22] as u64) << 8
+        | (bytes[21] as u64) << 16
+        | (bytes[20] as u64) << 24
+        | (bytes[19] as u64) << 32
+        | (bytes[18] as u64) << 40
+        | (bytes[17] as u64) << 48
+        | (bytes[16] as u64) << 56,
+      (bytes[15] as u64)
+        | (bytes[14] as u64) << 8
+        | (bytes[13] as u64) << 16
+        | (bytes[12] as u64) << 24
+        | (bytes[11] as u64) << 32
+        | (bytes[10] as u64) << 40
+        | (bytes[9] as u64) << 48
+        | (bytes[8] as u64) << 56,
+      (bytes[7] as u64)
+        | (bytes[6] as u64) << 8
+        | (bytes[5] as u64) << 16
+        | (bytes[4] as u64) << 24
+        | (bytes[3] as u64) << 32
+        | (bytes[2] as u64) << 40
+        | (bytes[1] as u64) << 48
+        | (bytes[0] as u64) << 56
     ])
   }
 
@@ -167,11 +171,27 @@ impl U256 {
     bytes
   }
 
+  pub const fn from_le_u64_array(array: &[u64; 4]) -> Self {
+    Self([array[0], array[1], array[2], array[3]])
+  }
+
+  pub const fn from_be_u64_array(array: &[u64; 4]) -> Self {
+    Self([array[3], array[2], array[1], array[0]])
+  }
+
+  pub const fn into_le_u64_array(self) -> [u64; 4] {
+    [self.0[0], self.0[1], self.0[2], self.0[3]]
+  }
+
+  pub const fn into_be_u64_array(self) -> [u64; 4] {
+    [self.0[3], self.0[2], self.0[1], self.0[0]]
+  }
+
   pub fn overflowing_add(self, other: Self) -> (Self, bool) {
     let mut result = [0u64; 4];
 
     let mut carry = false;
-    for i in 0..4 {
+    for i in 0 .. 4 {
       let (v, o1) = self.0[i].overflowing_add(other.0[i]);
       let (v, o2) = v.overflowing_add(carry as u64);
 
@@ -183,7 +203,7 @@ impl U256 {
   }
 
   pub fn highest_bit(self) -> usize {
-    for i in 3..=1 {
+    for i in 3 ..= 1 {
       if self.0[i] != 0 {
         return (i + 1) * 64 - self.0[i].leading_zeros() as usize;
       }
@@ -199,7 +219,7 @@ impl ops::Not for U256 {
   fn not(self) -> Self {
     let mut result = [0u64; 4];
 
-    for i in 0..4 {
+    for i in 0 .. 4 {
       result[i] = !self.0[i];
     }
 
@@ -213,7 +233,7 @@ impl ops::BitAnd for U256 {
   fn bitand(self, other: Self) -> Self {
     let mut result = [0u64; 4];
 
-    for i in 0..4 {
+    for i in 0 .. 4 {
       result[i] = self.0[i] & other.0[i];
     }
 
@@ -233,7 +253,7 @@ impl ops::BitOr for U256 {
   fn bitor(self, other: Self) -> Self {
     let mut result = [0u64; 4];
 
-    for i in 0..4 {
+    for i in 0 .. 4 {
       result[i] = self.0[i] | other.0[i];
     }
 
@@ -253,7 +273,7 @@ impl ops::BitXor for U256 {
   fn bitxor(self, other: Self) -> Self {
     let mut result = [0u64; 4];
 
-    for i in 0..4 {
+    for i in 0 .. 4 {
       result[i] = self.0[i] ^ other.0[i];
     }
 
@@ -267,7 +287,8 @@ impl ops::BitXorAssign for U256 {
   }
 }
 
-impl cmp::Eq for U256 {}
+impl cmp::Eq for U256 {
+}
 
 impl cmp::PartialEq for U256 {
   fn eq(&self, other: &Self) -> bool {
@@ -277,7 +298,7 @@ impl cmp::PartialEq for U256 {
 
 impl cmp::PartialOrd for U256 {
   fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
-    for i in 3..=0 {
+    for i in 3 ..= 0 {
       if self.0[i] != other.0[i] {
         return Some(self.0[i].cmp(&other.0[i]));
       }
@@ -307,12 +328,12 @@ impl ops::Shl for U256 {
     let blocks_shift = other / 64;
     let bits_shift = other % 64;
 
-    for i in 0..(4usize - blocks_shift as usize) {
+    for i in 0 .. (4usize - blocks_shift as usize) {
       result[i + blocks_shift as usize] = self.0[i];
     }
 
     let mut carry = 0u64;
-    for i in 0..4 {
+    for i in 0 .. 4 {
       result[i] = result[i] << bits_shift | carry;
 
       carry = result[i] >> (64 - bits_shift);
@@ -342,12 +363,12 @@ impl ops::Shr for U256 {
     let blocks_shift = other / 64;
     let bits_shift = other % 64;
 
-    for i in 0..(4usize - blocks_shift as usize) {
+    for i in 0 .. (4usize - blocks_shift as usize) {
       result[i] = self.0[i + blocks_shift as usize];
     }
 
     let mut carry = 0u64;
-    for i in 0..4 {
+    for i in 0 .. 4 {
       result[i] = result[i] >> bits_shift | carry;
 
       carry = result[i] << (64 - bits_shift);
@@ -451,7 +472,7 @@ impl TryFrom<&[u8]> for U256 {
   fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
     match value.try_into() {
       Ok(bytes) => Ok(Self::from_le_bytes(&bytes)),
-      Err(_) => Err("Invalid length"),
+      Err(_) => Err("Invalid length")
     }
   }
 }
@@ -462,7 +483,7 @@ impl TryFrom<&[u64]> for U256 {
   fn try_from(value: &[u64]) -> Result<Self, Self::Error> {
     match value.try_into() {
       Ok(bytes) => Ok(Self(bytes)),
-      Err(_) => Err("Invalid length"),
+      Err(_) => Err("Invalid length")
     }
   }
 }
@@ -473,7 +494,7 @@ impl TryFrom<Vec<u8>> for U256 {
   fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
     match value.try_into() {
       Ok(bytes) => Ok(Self::from_le_bytes(&bytes)),
-      Err(_) => Err("Invalid length"),
+      Err(_) => Err("Invalid length")
     }
   }
 }
@@ -484,7 +505,7 @@ impl TryFrom<&Vec<u8>> for U256 {
   fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
     match value.clone().try_into() {
       Ok(bytes) => Ok(Self::from_le_bytes(&bytes)),
-      Err(_) => Err("Invalid length"),
+      Err(_) => Err("Invalid length")
     }
   }
 }
@@ -495,7 +516,7 @@ impl TryFrom<Vec<u64>> for U256 {
   fn try_from(value: Vec<u64>) -> Result<Self, Self::Error> {
     match value.try_into() {
       Ok(bytes) => Ok(Self(bytes)),
-      Err(_) => Err("Invalid length"),
+      Err(_) => Err("Invalid length")
     }
   }
 }
@@ -506,7 +527,7 @@ impl TryFrom<&Vec<u64>> for U256 {
   fn try_from(value: &Vec<u64>) -> Result<Self, Self::Error> {
     match value.clone().try_into() {
       Ok(bytes) => Ok(Self(bytes)),
-      Err(_) => Err("Invalid length"),
+      Err(_) => Err("Invalid length")
     }
   }
 }
@@ -525,12 +546,12 @@ impl Into<Vec<u8>> for U256 {
 
 impl Into<[u64; 4]> for U256 {
   fn into(self) -> [u64; 4] {
-    self.0
+    self.into_le_u64_array()
   }
 }
 
 impl Into<Vec<u64>> for U256 {
   fn into(self) -> Vec<u64> {
-    self.0.to_vec()
+    self.into_le_u64_array().to_vec()
   }
 }
