@@ -1,4 +1,4 @@
-use crate::math::u256::U256;
+use crate::math::{ecc::EccParams, u256::U256};
 
 /// SM2 常数
 static SM2_P: U256 = U256::from_be_u64_array(&[
@@ -42,3 +42,6 @@ static SM2_GY: U256 = U256::from_be_u64_array(&[
   0xd0a9877cc62a4740,
   0x02df32e52139f0a0
 ]);
+
+static SM2_PARAMS: EccParams =
+  EccParams { a: SM2_A, b: SM2_B, p: SM2_P, n: SM2_N, g_x: SM2_GX, g_y: SM2_GY };

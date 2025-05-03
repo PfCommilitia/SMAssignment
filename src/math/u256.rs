@@ -4,13 +4,17 @@ use std::{cmp, ops};
 pub struct U256([u64; 4]);
 
 impl U256 {
-  pub const C0: Self =
+  pub const C_0: Self =
     Self([0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000]);
-  pub const C1: Self =
+  pub const C_1: Self =
     Self([0x0000000000000001, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000]);
-  pub const C256: Self =
+  pub const C_2: Self =
+    Self([0x0000000000000002, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000]);
+  pub const C_256: Self =
     Self([0x0000000000000100, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000]);
-  pub const C64: Self =
+  pub const C_3: Self =
+    Self([0x0000000000000003, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000]);
+  pub const C_64: Self =
     Self([0x0000000000000040, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000]);
   pub const MAX: Self =
     Self([0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff]);
@@ -202,14 +206,23 @@ impl U256 {
     (Self(result), carry)
   }
 
-  pub fn highest_bit(self) -> usize {
+  pub fn leading_zeros(self) -> usize {
     for i in 3 ..= 1 {
       if self.0[i] != 0 {
-        return (i + 1) * 64 - self.0[i].leading_zeros() as usize;
+        return (3 - i) * 64 + self.0[i].leading_zeros() as usize;
       }
     }
 
-    64 - self.0[0].leading_zeros() as usize
+    192 + self.0[0].leading_zeros() as usize
+  }
+
+  pub fn highest_bit(self) -> usize {
+    256 - self.leading_zeros()
+  }
+}
+impl Into<bool> for U256 {
+  fn into(self) -> bool {
+    self.0[3] != 0 || self.0[2] != 0 || self.0[1] != 0 || self.0[0] != 0
   }
 }
 
@@ -314,16 +327,15 @@ impl cmp::Ord for U256 {
   }
 }
 
-impl ops::Shl for U256 {
+impl ops::Shl<u32> for U256 {
   type Output = Self;
 
-  fn shl(self, other: U256) -> Self {
-    if other > Self::C256 {
-      return Self::C0;
+  fn shl(self, other: u32) -> Self {
+    if other > 256 {
+      return Self::C_0;
     }
 
     let mut result = [0u64; 4];
-    let other = other.0[0];
 
     let blocks_shift = other / 64;
     let bits_shift = other % 64;
@@ -343,22 +355,39 @@ impl ops::Shl for U256 {
   }
 }
 
+impl ops::ShlAssign<u32> for U256 {
+  fn shl_assign(&mut self, other: u32) {
+    *self = *self << other;
+  }
+}
+
+impl ops::Shl for U256 {
+  type Output = Self;
+
+  fn shl(self, other: U256) -> Self {
+    if other > Self::C_256 {
+      return Self::C_0;
+    }
+
+    self << (other.0[0] as u32)
+  }
+}
+
 impl ops::ShlAssign for U256 {
   fn shl_assign(&mut self, other: U256) {
     *self = *self << other;
   }
 }
 
-impl ops::Shr for U256 {
+impl ops::Shr<u32> for U256 {
   type Output = Self;
 
-  fn shr(self, other: U256) -> Self {
-    if other > Self::C256 {
-      return Self::C0;
+  fn shr(self, other: u32) -> Self {
+    if other > 256 {
+      return Self::C_0;
     }
 
     let mut result = [0u64; 4];
-    let other = other.0[0];
 
     let blocks_shift = other / 64;
     let bits_shift = other % 64;
@@ -375,6 +404,24 @@ impl ops::Shr for U256 {
     }
 
     Self(result)
+  }
+}
+
+impl ops::ShrAssign<u32> for U256 {
+  fn shr_assign(&mut self, other: u32) {
+    *self = *self >> other;
+  }
+}
+
+impl ops::Shr for U256 {
+  type Output = Self;
+
+  fn shr(self, other: U256) -> Self {
+    if other > Self::C_256 {
+      return Self::C_0;
+    }
+
+    self >> (other.0[0] as u32)
   }
 }
 
@@ -402,13 +449,86 @@ impl ops::Sub for U256 {
   type Output = Self;
 
   fn sub(self, other: Self) -> Self {
-    self.overflowing_add(!other).0.overflowing_add(Self::C1).0
+    self.overflowing_add(!other).0.overflowing_add(Self::C_1).0
   }
 }
 
 impl ops::SubAssign for U256 {
   fn sub_assign(&mut self, other: Self) {
     *self = *self - other;
+  }
+}
+
+impl ops::Mul for U256 {
+  type Output = Self;
+
+  fn mul(self, other: Self) -> Self {
+    let mut multiplier = self;
+    let mut multiplicand = other;
+    let mut result = Self::C_0;
+
+    while multiplier > Self::C_0 {
+      if multiplier.0[0] & 1 == 1 {
+        result = result + multiplicand;
+      }
+
+      multiplier = multiplier << Self::C_1;
+      multiplicand = multiplicand >> Self::C_1;
+    }
+
+    result
+  }
+}
+
+impl ops::MulAssign for U256 {
+  fn mul_assign(&mut self, other: Self) {
+    *self = *self * other;
+  }
+}
+
+impl ops::Div for U256 {
+  type Output = Self;
+
+  fn div(self, other: Self) -> Self {
+    let mut dividend = self;
+    let divisor = other;
+    let mut quotient = Self::C_0;
+
+    for i in (dividend.highest_bit() - divisor.highest_bit()) as u32 ..= 0 {
+      let r = divisor << i;
+
+      if dividend >= r {
+        quotient |= Self::C_1 << i;
+        dividend -= r;
+      }
+    }
+
+    quotient
+  }
+}
+
+impl ops::DivAssign for U256 {
+  fn div_assign(&mut self, other: Self) {
+    *self = *self / other;
+  }
+}
+
+impl ops::Rem for U256 {
+  type Output = Self;
+
+  fn rem(self, other: Self) -> Self {
+    let mut dividend = self;
+    let divisor = other;
+
+    for i in (dividend.highest_bit() - divisor.highest_bit()) as u32 ..= 0 {
+      let r = divisor << i;
+
+      if dividend >= r {
+        dividend -= r;
+      }
+    }
+
+    dividend
   }
 }
 
