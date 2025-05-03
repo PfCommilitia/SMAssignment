@@ -1,6 +1,6 @@
 use crate::math::{ecc::EccParams, u256::U256};
 
-/// SM2 常数
+/// # SM2 p 参数
 static SM2_P: U256 = U256::from_be_u64_array(&[
   0xfffffffeffffffff,
   0xffffffffffffffff,
@@ -8,6 +8,7 @@ static SM2_P: U256 = U256::from_be_u64_array(&[
   0xffffffffffffffff
 ]);
 
+/// # SM2 a 参数
 static SM2_A: U256 = U256::from_be_u64_array(&[
   0xfffffffeffffffff,
   0xffffffffffffffff,
@@ -15,6 +16,7 @@ static SM2_A: U256 = U256::from_be_u64_array(&[
   0xfffffffffffffffc
 ]);
 
+/// # SM2 b 参数
 static SM2_B: U256 = U256::from_be_u64_array(&[
   0x28e9fa9e9d9f5e34,
   0x4d5a9e4bcf6509a7,
@@ -22,6 +24,7 @@ static SM2_B: U256 = U256::from_be_u64_array(&[
   0xddbcbd414d940e93
 ]);
 
+/// # SM2 n 参数
 static SM2_N: U256 = U256::from_be_u64_array(&[
   0xfffffffeffffffff,
   0xffffffffffffffff,
@@ -29,6 +32,7 @@ static SM2_N: U256 = U256::from_be_u64_array(&[
   0x53bbf40939d54123
 ]);
 
+/// # SM2 Gx 参数
 static SM2_GX: U256 = U256::from_be_u64_array(&[
   0x32c4ae2c1f198119,
   0x5f9904466a39c994,
@@ -36,6 +40,7 @@ static SM2_GX: U256 = U256::from_be_u64_array(&[
   0x715a4589334c74c7
 ]);
 
+/// # SM2 Gy 参数
 static SM2_GY: U256 = U256::from_be_u64_array(&[
   0xbc3736a2f4f6779c,
   0x59bdcee36b692153,
@@ -43,5 +48,6 @@ static SM2_GY: U256 = U256::from_be_u64_array(&[
   0x02df32e52139f0a0
 ]);
 
+/// # SM2 椭圆曲线参数结构体
 static SM2_PARAMS: EccParams =
   EccParams { a: SM2_A, b: SM2_B, p: SM2_P, n: SM2_N, g_x: SM2_GX, g_y: SM2_GY };
