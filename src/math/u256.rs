@@ -467,13 +467,13 @@ impl ops::Mul for U256 {
     let mut multiplicand = other;
     let mut result = Self::C_0;
 
-    while multiplier > Self::C_0 {
-      if multiplier.0[0] & 1 == 1 {
-        result = result + multiplicand;
+    while multiplicand > Self::C_0 {
+      if multiplicand.0[0] & 1 == 1 {
+        result = result + multiplier;
       }
 
-      multiplier = multiplier << Self::C_1;
-      multiplicand = multiplicand >> Self::C_1;
+      multiplier = multiplier << 1;
+      multiplicand = multiplicand >> 1;
     }
 
     result
