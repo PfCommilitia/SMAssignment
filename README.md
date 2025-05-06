@@ -45,5 +45,6 @@ SMAssignment
 ## 参考及 Crate 使用
 
 * 主要参考文献为国家密码管理局发布的技术文档。
+* [rand](https://crates.io/crates/rand) 用于生成随机数。
 * 为 `U256` 类型实现四则运算时，参考了 [此页面](https://rgb-24bit.github.io/blog/2019/bitop.html)。
 * 使用了以 `Claude-3.5-Sonnet` 为主的多个 AI 模型辅助开发。所有代码均由本人编写，或已经过本人审阅修改。

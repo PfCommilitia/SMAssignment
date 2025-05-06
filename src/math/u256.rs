@@ -1,18 +1,21 @@
-use std::{cmp, ops};
+use {
+  rand::CryptoRng,
+  std::{cmp, ops}
+};
 
 /// # 256 位无符号整数
-/// 
+///
 /// 小端序 [u64; 4] 方法表示的 256 位无符号整数
-/// 
+///
 /// ## 成员
-/// 
-/// * `0` - 最低位
-/// * `1` - 次低位
-/// * `2` - 次高位
-/// * `3` - 最高位
+///
+/// * `0[0]` - 最低位
+/// * `0[1]` - 次低位
+/// * `0[2]` - 次高位
+/// * `0[3]` - 最高位
 ///
 /// ## 常量
-/// 
+///
 /// * `C_0` - 0
 /// * `C_1` - 1
 /// * `C_2` - 2
@@ -20,18 +23,20 @@ use std::{cmp, ops};
 /// * `C_3` - 3
 /// * `C_64` - 64
 /// * `MAX` - 2^256 - 1
-/// 
+///
 /// ## 构造方法
-/// 
+///
 /// * `let new_u256 = old_u256` - 复制一个 256 位无符号整数
 /// * `U256::new()` - 创建一个 0，不建议使用，建议直接赋值为 `U256::C_0`
-/// * `U256::from_le_bytes(bytes)` - 从小端序字节数组创建 256 位无符号整数，用于实现 `From<[u8; 32]>`
+/// * `U256::from_le_bytes(bytes)` - 从小端序字节数组创建 256
+///   位无符号整数，用于实现 `From<[u8; 32]>`
 /// * `U256::from_be_bytes(bytes)` - 从大端序字节数组创建 256 位无符号整数
-/// * `U256::from_le_u64_array(array)` - 从小端序 u64 数组创建 256 位无符号整数，用于实现 `From<[u64; 4]>`
+/// * `U256::from_le_u64_array(array)` - 从小端序 u64 数组创建 256
+///   位无符号整数，用于实现 `From<[u64; 4]>`
 /// * `U256::from_be_u64_array(array)` - 从大端序 u64 数组创建 256 位无符号整数
-/// 
+///
 /// ## 实现特征
-/// 
+///
 /// * `Copy`
 /// * `Clone`
 /// * `PartialEq`
@@ -40,8 +45,12 @@ use std::{cmp, ops};
 /// * `Ord`
 /// * `Shl`
 /// * `ShlAssign`
+/// * `Shl<u32>`
+/// * `ShlAssign<u32>`
 /// * `Shr`
 /// * `ShrAssign`
+/// * `Shr<u32>`
+/// * `ShrAssign<u32>`
 /// * `Add`
 /// * `AddAssign`
 /// * `Sub`
@@ -53,6 +62,7 @@ use std::{cmp, ops};
 /// * `Rem`
 /// * `RemAssign`
 /// * `Not`
+/// * `Neg`
 /// * `BitAnd`
 /// * `BitAndAssign`
 /// * `BitOr`
@@ -79,17 +89,24 @@ use std::{cmp, ops};
 /// * `TryFrom<&Vec<u8>>`
 /// * `TryFrom<Vec<u64>>`
 /// * `TryFrom<&Vec<u64>>`
-/// 
+///
 /// ## 方法
-/// 
-/// * `u256.overflowing_add(other: Self) -> (Self, bool)` - 无符号整数加法，返回结果对 2^256 取模的结果和是否溢出
+///
+/// * `u256.overflowing_add(other: Self) -> (Self, bool)` -
+///   无符号整数加法，返回结果对 2^256 取模的结果和是否溢出
 /// * `u256.leading_zeros() -> usize` - 返回前导 0 的个数
-/// * `u256.highest_bit() -> usize` - 返回最高位的位置，通过 `256 - u256.leading_zeros()` 计算
-/// * `u256.into_le_bytes() -> [u8; 32]` - 返回小端序字节数组，用于实现 `Into<[u8; 32]>`
+/// * `u256.highest_bit() -> usize` - 返回最高位的位置，通过 `256 -
+///   u256.leading_zeros()` 计算
+/// * `u256.into_le_bytes() -> [u8; 32]` - 返回小端序字节数组，用于实现
+///   `Into<[u8; 32]>`
 /// * `u256.into_be_bytes() -> [u8; 32]` - 返回大端序字节数组
-/// * `u256.into_le_u64_array() -> [u64; 4]` - 返回小端序 u64 数组，用于实现 `Into<[u64; 4]>`
+/// * `u256.into_le_u64_array() -> [u64; 4]` - 返回小端序 u64 数组，用于实现
+///   `Into<[u64; 4]>`
 /// * `u256.into_be_u64_array() -> [u64; 4]` - 返回大端序 u64 数组
-#[derive(Copy, Clone)]
+/// * `u256.random(rng: &mut impl CryptoRng) -> Self` - 返回一个随机数
+/// * `u256.random_in_range(rng: &mut impl CryptoRng, min: Self, max: Self) ->
+///   Self` - 返回一个在 [`min`, `max`) 范围内的随机数
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub struct U256([u64; 4]);
 
 impl U256 {
@@ -102,40 +119,40 @@ impl U256 {
   /// # `U256` 常量 2
   pub const C_2: Self =
     Self([0x0000000000000002, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000]);
-  /// # `U256` 常量 3
-  pub const C_3: Self =
-  Self([0x0000000000000003, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000]);
-  /// # `U256` 常量 64
-  pub const C_64: Self =
-    Self([0x0000000000000040, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000]);
   /// # `U256` 常量 256
   pub const C_256: Self =
     Self([0x0000000000000100, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000]);
+  /// # `U256` 常量 3
+  pub const C_3: Self =
+    Self([0x0000000000000003, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000]);
+  /// # `U256` 常量 64
+  pub const C_64: Self =
+    Self([0x0000000000000040, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000]);
   /// # `U256` 常量 `MAX`
   pub const MAX: Self =
     Self([0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff]);
 
   /// # `U256` 构造方法
-  /// 
+  ///
   /// ## 返回值
-  /// 
+  ///
   /// * `Self` - 返回一个 0 的 `U256` 实例
-  /// 
+  ///
   /// ## 注意事项
-  /// 
+  ///
   /// * 不建议使用，建议直接赋值为 `U256::C_0`
   pub const fn new() -> Self {
     Self([0u64; 4])
   }
 
   /// # `U256` 从小端序字节数组创建 256 位无符号整数
-  /// 
+  ///
   /// ## 参数
-  /// 
+  ///
   /// * `bytes` - 小端序字节数组
-  /// 
+  ///
   /// ## 返回值
-  /// 
+  ///
   /// * `Self` - 返回一个 256 位无符号整数
   pub const fn from_le_bytes(bytes: &[u8; 32]) -> Self {
     Self([
@@ -175,13 +192,13 @@ impl U256 {
   }
 
   /// # `U256` 从大端序字节数组创建 256 位无符号整数
-  /// 
+  ///
   /// ## 参数
-  /// 
+  ///
   /// * `bytes` - 大端序字节数组
-  /// 
+  ///
   /// ## 返回值
-  /// 
+  ///
   /// * `Self` - 返回一个 256 位无符号整数
   pub const fn from_be_bytes(bytes: &[u8; 32]) -> Self {
     Self([
@@ -221,9 +238,9 @@ impl U256 {
   }
 
   /// # `U256` 返回小端序字节数组
-  /// 
+  ///
   /// ## 返回值
-  /// 
+  ///
   /// * `[u8; 32]` - 返回一个 256 位无符号整数的小端序字节数组
   pub const fn into_le_bytes(self) -> [u8; 32] {
     let mut bytes = [0u8; 32];
@@ -265,9 +282,9 @@ impl U256 {
   }
 
   /// # `U256` 返回大端序字节数组
-  /// 
+  ///
   /// ## 返回值
-  /// 
+  ///
   /// * `[u8; 32]` - 返回一个 256 位无符号整数的大端序字节数组
   pub const fn into_be_bytes(self) -> [u8; 32] {
     let mut bytes = [0u8; 32];
@@ -309,57 +326,57 @@ impl U256 {
   }
 
   /// # `U256` 从小端序 u64 数组创建 256 位无符号整数
-  /// 
+  ///
   /// ## 参数
-  /// 
+  ///
   /// * `array` - 小端序 u64 数组
-  /// 
+  ///
   /// ## 返回值
-  /// 
+  ///
   /// * `Self` - 返回一个 256 位无符号整数
   pub const fn from_le_u64_array(array: &[u64; 4]) -> Self {
     Self([array[0], array[1], array[2], array[3]])
   }
 
   /// # `U256` 从大端序 u64 数组创建 256 位无符号整数
-  /// 
+  ///
   /// ## 参数
-  /// 
+  ///
   /// * `array` - 大端序 u64 数组
-  /// 
+  ///
   /// ## 返回值
-  /// 
+  ///
   /// * `Self` - 返回一个 256 位无符号整数
   pub const fn from_be_u64_array(array: &[u64; 4]) -> Self {
     Self([array[3], array[2], array[1], array[0]])
   }
 
   /// # `U256` 返回小端序 u64 数组
-  /// 
+  ///
   /// ## 返回值
-  /// 
+  ///
   /// * `[u64; 4]` - 返回一个 256 位无符号整数的小端序 u64 数组
   pub const fn into_le_u64_array(self) -> [u64; 4] {
     [self.0[0], self.0[1], self.0[2], self.0[3]]
   }
 
   /// # `U256` 返回大端序 u64 数组
-  /// 
+  ///
   /// ## 返回值
-  /// 
+  ///
   /// * `[u64; 4]` - 返回一个 256 位无符号整数的大端序 u64 数组
   pub const fn into_be_u64_array(self) -> [u64; 4] {
     [self.0[3], self.0[2], self.0[1], self.0[0]]
   }
 
   /// # `U256` 无符号整数加法，返回结果对 2^256 取模的结果和是否溢出
-  /// 
+  ///
   /// ## 参数
-  /// 
+  ///
   /// * `other` - 另一个 256 位无符号整数
-  /// 
+  ///
   /// ## 返回值
-  /// 
+  ///
   /// * `(Self, bool)` - 返回结果对 2^256 取模的结果，以及是否溢出
   pub fn overflowing_add(self, other: Self) -> (Self, bool) {
     let mut result = [0u64; 4];
@@ -377,9 +394,9 @@ impl U256 {
   }
 
   /// # `U256` 返回前导 0 的个数
-  /// 
+  ///
   /// ## 返回值
-  /// 
+  ///
   /// * `usize` - 返回前导 0 的个数
   pub fn leading_zeros(self) -> usize {
     for i in 3 ..= 1 {
@@ -392,12 +409,49 @@ impl U256 {
   }
 
   /// # `U256` 返回最高位的位置
-  /// 
+  ///
   /// ## 返回值
-  /// 
+  ///
   /// * `usize` - 返回最高位的位置
   pub fn highest_bit(self) -> usize {
     256 - self.leading_zeros()
+  }
+
+  /// # `U256` 返回一个随机数
+  ///
+  /// ## 参数
+  ///
+  /// * `rng` - 随机数生成器
+  ///
+  /// ## 返回值
+  ///
+  /// * `Self` - 返回一个随机数
+  pub fn random<R: CryptoRng>(rng: &mut R) -> Self {
+    let mut bytes = [0u8; 32];
+    rng.fill_bytes(&mut bytes);
+
+    bytes.into()
+  }
+
+  /// # `U256` 返回一个在 [`min`, `max`) 范围内的随机数
+  ///
+  /// ## 参数
+  ///
+  /// * `rng` - 随机数生成器
+  /// * `min` - 最小值
+  /// * `max` - 最大值
+  ///
+  /// ## 返回值
+  ///
+  /// * `Self` - 返回一个在 [`min`, `max`) 范围内的随机数
+  pub fn random_in_range<R: CryptoRng>(rng: &mut R, min: Self, max: Self) -> Self {
+    loop {
+      let r = Self::random(rng);
+
+      if r >= min && r < max {
+        break r;
+      }
+    }
   }
 }
 
@@ -418,6 +472,14 @@ impl ops::Not for U256 {
     }
 
     Self(result)
+  }
+}
+
+impl ops::Neg for U256 {
+  type Output = Self;
+
+  fn neg(self) -> Self {
+    !self + Self::C_1
   }
 }
 
@@ -478,15 +540,6 @@ impl ops::BitXor for U256 {
 impl ops::BitXorAssign for U256 {
   fn bitxor_assign(&mut self, other: Self) {
     *self = *self ^ other;
-  }
-}
-
-impl cmp::Eq for U256 {
-}
-
-impl cmp::PartialEq for U256 {
-  fn eq(&self, other: &Self) -> bool {
-    self.0 == other.0
   }
 }
 
