@@ -1,36 +1,38 @@
 /// # 比特序列
 ///
 /// 字节存储的比特序列，如果最后一个字节未填满，使用 `last_byte_len` 记录长度。
-/// 
+///
 /// 全局使用大端序，可转换为用 0 填充末尾字节的小端序字节序列
-/// 
+///
 /// ## 成员
-/// 
+///
 /// * `bytes` - 字节序列
 /// * `last_byte_len` - 最后一个字节的长度，如果这个字节未填满
-/// 
+///
 /// ## 构造方法
-/// 
-/// * `new(bytes: Vec<u8>, last_byte_len: u8) -> Self` - 从字节序列和最后一个字节的长度构造
+///
+/// * `new(bytes: Vec<u8>, last_byte_len: u8) -> Self` -
+///   从字节序列和最后一个字节的长度构造
 /// * `new_empty() -> Self` - 创建一个空序列
 /// * `with_bytes(bytes: &[u8]) -> Self` - 从字节序列构造
-/// * `try_with_bits(bytes: &[u8], size: u64) -> Result<Self, String>` - 从字节序列和长度构造
-/// 
+/// * `try_with_bits(bytes: &[u8], size: u64) -> Result<Self, String>` -
+///   从字节序列和长度构造
+///
 /// ## 实现特征
-/// 
+///
 /// * `Clone`
 /// * `From<&[u8]>`
 /// * `Into<Vec<u8>>`
-/// 
+///
 /// ## 方法
-/// 
+///
 /// * `get_bytes(&self) -> &[u8]` - 获取字节序列
 /// * `get_bytes_mut(&mut self) -> &mut [u8]` - 获取字节序列的可变引用
 /// * `get_last_byte_len(&self) -> u8` - 获取最后一个字节的长度
 /// * `append_bytes(&mut self, bytes: &[u8])` - 追加字节序列
 /// * `append_bits(&mut self, bits: &Self)` - 追加比特序列
 /// * `into_le_bytes(&self) -> Vec<u8>` - 转换为小端序字节序列
-/// * `len(&self) -> u64` - 获取比特序列的长度 
+/// * `len(&self) -> u64` - 获取比特序列的长度
 #[derive(Clone)]
 pub struct BitSequence {
   bytes: Vec<u8>,
@@ -41,7 +43,7 @@ impl BitSequence {
   pub fn new(bytes: Vec<u8>, last_byte_len: u8) -> Self {
     Self { bytes, last_byte_len }
   }
-  
+
   pub fn new_empty() -> Self {
     Self { bytes: Vec::new(), last_byte_len: 0 }
   }

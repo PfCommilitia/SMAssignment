@@ -17,7 +17,6 @@ use crate::math::bytes::BitSequence;
 /// * `Invalid input size` - 输入大小不合法（size 大于实际位数或小于实际位数
 ///   -8）
 pub fn hash(input: &BitSequence) -> Result<[u8; 32], Box<dyn std::error::Error>> {
-
   // 1. 填充
 
   // 计算填充后长度
