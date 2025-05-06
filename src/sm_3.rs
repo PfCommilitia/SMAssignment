@@ -8,12 +8,14 @@
 ///
 /// ## 返回值
 ///
-/// * `Result<[u8; 32], Box<dyn std::error::Error>>` - 成功时返回一个 256 位（32 字节）的二进制数组，表示哈希结果；失败时返回错误信息
+/// * `Result<[u8; 32], Box<dyn std::error::Error>>` - 成功时返回一个 256 位（32
+///   字节）的二进制数组，表示哈希结果；失败时返回错误信息
 ///
 /// ## 错误
 ///
 /// * `Too long an input` - 输入数组长度超出 u64 范围
-/// * `Invalid input size` - 输入大小不合法（size 大于实际位数或小于实际位数 -8）
+/// * `Invalid input size` - 输入大小不合法（size 大于实际位数或小于实际位数
+///   -8）
 pub fn hash(input: &[u8], size: u64) -> Result<[u8; 32], Box<dyn std::error::Error>> {
   // 0. 验证输入
 
