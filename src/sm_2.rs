@@ -1,4 +1,7 @@
-use crate::math::{ecc::EccParams, u256::U256};
+use crate::math::{
+  ecc::{EccOps, EccParams, EccPoint, ModOps},
+  u256::U256
+};
 
 /// # SM2 p 参数
 static SM2_P: U256 = U256::from_be_u64_array(&[
@@ -51,3 +54,41 @@ static SM2_GY: U256 = U256::from_be_u64_array(&[
 /// # SM2 椭圆曲线参数结构体
 static SM2_PARAMS: EccParams =
   EccParams { a: SM2_A, b: SM2_B, p: SM2_P, n: SM2_N, g_x: SM2_GX, g_y: SM2_GY };
+
+/// # SM2 ECC 点 G
+static SM2_G: EccPoint<'static> =
+  EccPoint { x: SM2_GX, y: SM2_GY, params: &SM2_PARAMS, infinity: false };
+
+pub struct KeyPair<'a> {
+  private_key: U256,
+  public_key: EccPoint<'a>
+}
+
+pub fn key_gen(params: &EccParams) -> KeyPair {
+  let d = U256::random_in_range(&mut rand::rng(), U256::C_1, params.n - U256::C_1);
+
+  let p = SM2_G.ecc_mul(d, params);
+
+  KeyPair { private_key: d, public_key: p }
+}
+
+pub fn pubkey_validate<'a>(p: &EccPoint<'a>) -> bool {
+  if p.infinity {
+    return false;
+  }
+
+  let params = p.params;
+
+  if p.y.mod_mul(p.y, params.p)
+    != p
+      .x
+      .mod_mul(p.x, params.p)
+      .mod_mul(p.x, params.p)
+      .mod_add(params.a.mod_mul(p.x, params.p), params.p)
+      .mod_add(params.b % params.p, params.p)
+  {
+    return false;
+  }
+
+  p.ecc_mul(params.n, params).infinity
+}
