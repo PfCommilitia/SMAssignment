@@ -1,10 +1,10 @@
+use crate::math::bytes::BitSequence;
+
 /// # SM3 哈希函数
 ///
 /// ## 参数
 ///
-/// * `input` - 输入消息；最后一个字节未填充满时，后续位填充为 0
-///
-/// * `size` - 输入消息的二进制位数；为实际有效的位数，单位为比特
+/// * `input` - 输入消息，为比特序列
 ///
 /// ## 返回值
 ///
@@ -16,59 +16,28 @@
 /// * `Too long an input` - 输入数组长度超出 u64 范围
 /// * `Invalid input size` - 输入大小不合法（size 大于实际位数或小于实际位数
 ///   -8）
-pub fn hash(input: &[u8], size: u64) -> Result<[u8; 32], Box<dyn std::error::Error>> {
-  // 0. 验证输入
-
-  {
-    // 确保输入数组大小在 u64 以内
-    let capacity = {
-      let capacity_bytes_u64: u64 = input.len().try_into()?;
-
-      match 8u64.checked_mul(capacity_bytes_u64) {
-        Some(capacity) => capacity,
-        None => return Err("Too long an input".to_string().into())
-      }
-    };
-
-    // 确保 size 合法，且输入数组尾端没有多余的0
-    if capacity < size {
-      return Err("Invalid input size".to_string().into());
-    }
-
-    match size.overflowing_add(8) {
-      (added_size, false) => {
-        if capacity > added_size {
-          return Err("Invalid input size".to_string().into());
-        }
-      },
-      _ => {}
-    }
-  }
+pub fn hash(input: &BitSequence) -> Result<[u8; 32], Box<dyn std::error::Error>> {
 
   // 1. 填充
 
   // 计算填充后长度
-  let size_required = size + 65;
+  let size_required = input.len() + 65;
   let padded_size =
     if size_required % 512 == 0 { size_required } else { (size_required / 512 + 1) * 512 };
 
   let input = {
-    let mut new_input = vec![0u8; (padded_size as usize) / 8];
-
-    new_input[.. input.len()].copy_from_slice(input);
+    let mut new_input = input.clone();
 
     // 加入一个1位
-    if size % 8 == 0 {
-      new_input[(size as usize) / 8] = 0x80;
-    } else {
-      new_input[(size as usize) / 8] |= 1 << (7 - size % 8);
-    }
+    new_input.append_bits(&BitSequence::try_with_bits(&[1], 1).unwrap());
 
-    // 最后64位为输入长度
-    let size_bits = size.to_be_bytes();
-    new_input[((padded_size as usize) / 8 - 8) ..].copy_from_slice(&size_bits);
+    // 填充0，留出8个字节
+    new_input.append_bytes(&vec![0; padded_size as usize / 8 - input.get_bytes().len() - 8]);
 
-    new_input
+    // 加入输入长度
+    new_input.append_bytes(&input.len().to_be_bytes());
+
+    new_input.get_bytes().to_vec()
   };
 
   // 2. 迭代过程
