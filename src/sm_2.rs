@@ -147,7 +147,7 @@ fn get_z(params: &EccParams, id: &BitSequence, public_key: &EccPoint) -> U256 {
   bits.append_bytes(&public_key.x.into_le_bytes());
   bits.append_bytes(&public_key.y.into_le_bytes());
 
-  hash(&bits).unwrap().into()
+  hash(&bits).into()
 }
 
 /// # SM2 签名输入结构体
@@ -206,7 +206,7 @@ pub fn generate_signature(input: &SigningInput, message: &BitSequence) -> ([u8; 
 
   m_bar.append_bits(message);
 
-  let e = hash(&m_bar).unwrap().into();
+  let e = hash(&m_bar).into();
 
   loop {
     let k = U256::random_in_range(&mut rand::rng(), U256::C_1, input.params.n);
@@ -308,7 +308,7 @@ pub fn verify_signature(
 
   m_bar.append_bits(message);
 
-  let e: U256 = hash(&m_bar).unwrap().into();
+  let e: U256 = hash(&m_bar).into();
 
   e.mod_add(x1, input.params.p).modded(input.params.n) == r
 }

@@ -8,15 +8,8 @@ use crate::math::bytes::BitSequence;
 ///
 /// ## 返回值
 ///
-/// * `Result<[u8; 32], Box<dyn std::error::Error>>` - 成功时返回一个 256 位（32
-///   字节）的二进制数组，表示哈希结果；失败时返回错误信息
-///
-/// ## 错误
-///
-/// * `Too long an input` - 输入数组长度超出 u64 范围
-/// * `Invalid input size` - 输入大小不合法（size 大于实际位数或小于实际位数
-///   -8）
-pub fn hash(input: &BitSequence) -> Result<[u8; 32], Box<dyn std::error::Error>> {
+/// 返回一个 256 位（32 字节）的二进制数组，表示哈希结果
+pub fn hash(input: &BitSequence) -> [u8; 32] {
   // 1. 填充
 
   // 计算填充后长度
@@ -56,7 +49,7 @@ pub fn hash(input: &BitSequence) -> Result<[u8; 32], Box<dyn std::error::Error>>
   // 分组，对每个组调用压缩函数，最终结果保存到 `result_array_u32`
   for i in 0 .. ((padded_size as usize) / 512) {
     // 声明 `message_group` 为 [u8; 64]
-    let message_group: [u8; 64] = input[(i * 64) .. (i * 64 + 64)].try_into()?;
+    let message_group: [u8; 64] = input[(i * 64) .. (i * 64 + 64)].try_into().unwrap();
 
     cf(&mut result_array_u32, &message_group);
   }
@@ -70,7 +63,7 @@ pub fn hash(input: &BitSequence) -> Result<[u8; 32], Box<dyn std::error::Error>>
     result_array_u8[i * 4 .. (i + 1) * 4].copy_from_slice(&bytes);
   }
 
-  Ok(result_array_u8)
+  result_array_u8
 }
 
 /// # SM3 压缩函数
