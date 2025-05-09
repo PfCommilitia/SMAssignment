@@ -1,5 +1,5 @@
 use {
-  super::u256::U256,
+  super::{bytes::BitSequence, u256::U256},
   std::{
     cmp,
     ops::{self}
@@ -64,7 +64,6 @@ impl ModInv for U256 {
 /// * `n` - 椭圆曲线参数 n
 /// * `g_x` - 椭圆曲线参数 Gx
 /// * `g_y` - 椭圆曲线参数 Gy
-///
 /// ## 构造方法
 ///
 /// * `EccParams { a, b, p, n, g_x, g_y }` - 初始化椭圆曲线参数结构体
@@ -111,6 +110,14 @@ pub struct EccParams {
 /// * `PartialEq`
 /// * `Eq`
 /// * `EccOps` - 椭圆曲线相关运算
+/// * `From<EccPoint<'a>> -> Vec<u8>`
+/// * `From<EccPoint<'a>> -> BitSequence`
+///
+/// ## 方法
+///
+/// * `from_bytes(bytes: &[u8; 65], params: &'a EccParams) -> Self` -
+///   从字节序列构造椭圆曲线点
+/// * `validate_on_curve(self) -> bool` - 验证椭圆曲线点是否在曲线上
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct EccPoint<'a> {
   pub x: U256,
@@ -134,6 +141,29 @@ impl<'a> EccPoint<'a> {
 
   pub fn new_simple(x: U256, y: U256, params: &'a EccParams) -> Self {
     Self::new(x, y, params, false)
+  }
+
+  pub fn from_bytes(bytes: &[u8; 65], params: &'a EccParams) -> Self {
+    let x = U256::from_le_bytes(&bytes[1 .. 33].try_into().unwrap());
+    let y = U256::from_le_bytes(&bytes[33 .. 65].try_into().unwrap());
+
+    Self::new_simple(x, y, params)
+  }
+
+  pub fn validate_on_curve(self) -> bool {
+    // y^2 = x^3 + ax + b (mod p)
+    self.infinity
+      || self.y.mod_mul(self.y, self.params.p)
+        == self
+          .x
+          .mod_mul(self.x, self.params.p)
+          .mod_mul(self.x, self.params.p)
+          .mod_add(self.x.mod_mul(self.params.a, self.params.p), self.params.p)
+          .mod_add(self.params.b.modded(self.params.p), self.params.p)
+  }
+
+  pub fn validate_on_given_curve(self, params: &EccParams) -> bool {
+    self.params == params && self.validate_on_curve()
   }
 }
 
@@ -367,7 +397,7 @@ pub trait ModOps: Sized {
 /// * `Shl<u32>`
 /// * `Shr<u32>`
 /// * `From<U256>`
-/// * `Into<U256>`
+/// * `From<U512Helper> -> U256`
 /// * `ModOps` - 带模/域内运算
 ///
 /// ## 方法
@@ -407,9 +437,9 @@ impl From<U256> for U512Helper {
   }
 }
 
-impl Into<U256> for U512Helper {
-  fn into(self) -> U256 {
-    let blocks = self.0;
+impl From<U512Helper> for U256 {
+  fn from(helper: U512Helper) -> Self {
+    let blocks = helper.0;
 
     U256::from_le_u64_array(&[blocks[0], blocks[1], blocks[2], blocks[3]])
   }
@@ -581,5 +611,23 @@ impl ModOps for U256 {
 
   fn modded(self, modulus: Self) -> Self {
     self % modulus
+  }
+}
+
+impl<'a> From<EccPoint<'a>> for Vec<u8> {
+  fn from(point: EccPoint<'a>) -> Self {
+    let mut result = Vec::with_capacity(65);
+
+    result.push(0x04);
+    result.extend_from_slice(&point.x.into_le_bytes());
+    result.extend_from_slice(&point.y.into_le_bytes());
+
+    result
+  }
+}
+
+impl<'a> From<EccPoint<'a>> for BitSequence {
+  fn from(point: EccPoint<'a>) -> Self {
+    Vec::<u8>::from(point)[..].into()
   }
 }

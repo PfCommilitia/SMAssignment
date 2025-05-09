@@ -85,7 +85,8 @@ pub fn key_gen(params: &EccParams) -> KeyPair {
   let d = U256::random_in_range(&mut rand::rng(), U256::C_1, params.n - U256::C_1);
 
   // 计算对应的公钥
-  let p = SM2_G.ecc_mul(d, params);
+  let g = EccPoint::new(params.g_x, params.g_y, params, false);
+  let p = g.ecc_mul(d, params);
 
   KeyPair { private_key: d, public_key: p }
 }
@@ -108,15 +109,7 @@ pub fn pubkey_validate<'a>(p: &'a EccPoint) -> bool {
 
   let params = p.params;
 
-  // (p.y)^2 == (p.x)^3 + a * p.x + b (mod p)
-  if p.y.mod_mul(p.y, params.p)
-    != p
-      .x
-      .mod_mul(p.x, params.p)
-      .mod_mul(p.x, params.p)
-      .mod_add(params.a.mod_mul(p.x, params.p), params.p)
-      .mod_add(params.b.modded(params.p), params.p)
-  {
+  if !p.validate_on_curve() {
     return false;
   }
 
@@ -216,10 +209,11 @@ pub fn generate_signature(input: &SigningInput, message: &BitSequence) -> ([u8; 
   // e = H(m_bar)
   let e = hash(&m_bar).into();
 
+  let g = EccPoint::new(input.params.g_x, input.params.g_y, input.params, false);
   loop {
     let k = U256::random_in_range(&mut rand::rng(), U256::C_1, input.params.n);
 
-    let x1 = SM2_G.ecc_mul(k, input.params).x;
+    let x1 = g.ecc_mul(k, input.params).x;
 
     let r = x1.mod_add(e, input.params.p);
 
@@ -311,10 +305,9 @@ pub fn verify_signature(
   }
 
   // x1 = [s]G + [t]Pa
-  let x1 = SM2_G
-    .ecc_mul(s, input.params)
-    .ecc_add(input.public_key.ecc_mul(t, input.params), input.params)
-    .x;
+  let g = EccPoint::new(input.params.g_x, input.params.g_y, input.params, false);
+  let x1 =
+    g.ecc_mul(s, input.params).ecc_add(input.public_key.ecc_mul(t, input.params), input.params).x;
 
   // m_bar = Za || M
   let mut m_bar =
@@ -487,8 +480,9 @@ pub struct ExchangeKeyConfirmOutput {
 pub fn exchange_key_initiate<'a>(
   input: &'a ExchangeKeyInput
 ) -> (EccPoint<'a>, ExchangeKeyStateInitiator<'a>) {
+  let g = EccPoint::new(input.params.g_x, input.params.g_y, input.params, false);
   let r = U256::random_in_range(&mut rand::rng(), U256::C_1, input.params.n);
-  let r_point = SM2_G.ecc_mul(r, input.params);
+  let r_point = g.ecc_mul(r, input.params);
 
   (r_point, ExchangeKeyStateInitiator { r_point, r })
 }
@@ -516,14 +510,7 @@ pub fn exchange_key_generate<'a>(
   klen: u64
 ) -> Result<(ExchangeKeyGenerateOutput<'a>, ExchangeKeyStateReceiver<'a>), &'static str> {
   // 提前验证 B5 前半部分，接收到的点是否在椭圆曲线上
-  if received.y.mod_mul(received.y, input.params.p)
-    != received
-      .x
-      .mod_mul(received.x, input.params.p)
-      .mod_mul(received.x, input.params.p)
-      .mod_add(input.params.a.mod_mul(received.x, input.params.p), input.params.p)
-      .mod_add(input.params.b.modded(input.params.p), input.params.p)
-  {
+  if !received.validate_on_given_curve(input.params) {
     return Err("Invalid received point");
   }
 
@@ -531,7 +518,8 @@ pub fn exchange_key_generate<'a>(
   let r = U256::random_in_range(&mut rand::rng(), U256::C_1, input.params.n);
 
   // 计算随机点
-  let r_point = SM2_G.ecc_mul(r, input.params);
+  let g = EccPoint::new(input.params.g_x, input.params.g_y, input.params, false);
+  let r_point = g.ecc_mul(r, input.params);
 
   // omega = ceil(log2(n)).div_ceil(2) - 1
   let omega = input.params.n.highest_bit().div_ceil(2) as u64 - 1;
@@ -622,15 +610,7 @@ pub fn exchange_key_confirm<'a>(
   klen: u64
 ) -> Result<ExchangeKeyConfirmOutput, &'static str> {
   // 提前验证 A6 前半部分，接收到的点是否在椭圆曲线上
-  if respond.received.y.mod_mul(respond.received.y, input.params.p)
-    != respond
-      .received
-      .x
-      .mod_mul(respond.received.x, input.params.p)
-      .mod_mul(respond.received.x, input.params.p)
-      .mod_add(input.params.a.mod_mul(respond.received.x, input.params.p), input.params.p)
-      .mod_add(input.params.b.modded(input.params.p), input.params.p)
-  {
+  if !respond.received.validate_on_given_curve(input.params) {
     return Err("Invalid received point");
   }
 
@@ -744,4 +724,134 @@ pub fn exchange_key_validate<'a>(
 
   // 如果验证参数不匹配，则验证失败
   hash(&to_hash_sequence) == *respond
+}
+
+/// # SM2 加密函数
+///
+/// 加密消息
+///
+/// ## 参数
+///
+/// * `params` - 椭圆曲线参数
+/// * `message` - 消息
+/// * `public_key` - 公钥
+///
+/// ## 返回
+///
+/// 如果加密成功，返回密文
+///
+/// 如果加密失败，返回错误
+pub fn encrypt(
+  params: &EccParams,
+  message: &BitSequence,
+  public_key: &EccPoint
+) -> Result<BitSequence, &'static str> {
+  let g = EccPoint::new(params.g_x, params.g_y, params, false);
+
+  let (c1, intermediate, t) = loop {
+    let k = U256::random_in_range(&mut rand::rng(), U256::C_1, params.n);
+
+    let c1 = g.ecc_mul(k, params);
+
+    if c1.infinity {
+      return Err("Invalid c1");
+    }
+
+    if public_key.ecc_mul(params.n, params).infinity {
+      return Err("Invalid s");
+    }
+
+    let intermediate = public_key.ecc_mul(k, params);
+
+    let mut sequence = BitSequence::new_empty();
+    sequence.append_bits(&BitSequence::from(c1));
+    sequence.append_bits(&BitSequence::from(intermediate));
+
+    let t = key_derivation_function(&sequence, message.len());
+
+    if t.get_bytes().iter().find(|b| **b != 0).is_none() {
+      continue;
+    }
+
+    break (c1, intermediate, t);
+  };
+
+  // c2 = M ^ t
+  let c2 = message.xor(&t).unwrap();
+
+  // c3 = H(x2 || M || y2)
+  let mut sequence = BitSequence::new_empty();
+  sequence.append_bits(&BitSequence::try_with_bits(&intermediate.x.into_le_bytes(), 256).unwrap());
+  sequence.append_bits(&message);
+  sequence.append_bits(&BitSequence::try_with_bits(&intermediate.y.into_le_bytes(), 256).unwrap());
+
+  let c3 = BitSequence::try_with_bits(&hash(&sequence), 256).unwrap();
+
+  let mut result = BitSequence::new_empty();
+  result.append_bits(&BitSequence::from(c1));
+  result.append_bits(&c2);
+  result.append_bits(&c3);
+
+  Ok(result)
+}
+
+/// # SM2 解密函数
+///
+/// 解密消息
+///
+/// ## 参数
+///
+/// * `params` - 椭圆曲线参数
+/// * `cipher_text` - 密文
+/// * `private_key` - 私钥
+///
+/// ## 返回
+///
+/// 如果解密成功，返回明文
+///
+/// 如果解密失败，返回错误
+pub fn decrypt(
+  params: &EccParams,
+  cipher_text: &BitSequence,
+  private_key: U256
+) -> Result<BitSequence, &'static str> {
+  let key_length = cipher_text.len() - 65 - 256;
+  let c1 = EccPoint::from_bytes(&cipher_text.get_bytes()[0 .. 65].try_into().unwrap(), params);
+
+  if !c1.validate_on_curve() {
+    return Err("Invalid c1");
+  }
+
+  if c1.ecc_mul(params.n, params).infinity {
+    return Err("Invalid s");
+  }
+
+  let p2 = c1.ecc_mul(private_key, params);
+
+  let mut sequence = BitSequence::new_empty();
+  sequence.append_bits(&BitSequence::try_with_bits(&p2.x.into_le_bytes(), 256).unwrap());
+  sequence.append_bits(&BitSequence::try_with_bits(&p2.y.into_le_bytes(), 256).unwrap());
+
+  let t = key_derivation_function(&sequence, key_length);
+
+  if t.get_bytes().iter().all(|b| *b == 0) {
+    return Err("Invalid t");
+  }
+
+  let c2 = cipher_text.slice(65, cipher_text.len() - 256).unwrap();
+
+  let result = c2.xor(&t).unwrap();
+
+  let mut to_hash_sequence = BitSequence::new_empty();
+  to_hash_sequence.append_bits(&BitSequence::try_with_bits(&p2.x.into_le_bytes(), 256).unwrap());
+  to_hash_sequence.append_bits(&result);
+  to_hash_sequence.append_bits(&BitSequence::try_with_bits(&p2.y.into_le_bytes(), 256).unwrap());
+
+  let u = BitSequence::try_with_bits(&hash(&to_hash_sequence), 256).unwrap();
+
+  if u != cipher_text.slice(cipher_text.len() - 256, cipher_text.len()).unwrap() {
+    return Err("Invalid u");
+  }
+
+  Ok(result)
 }

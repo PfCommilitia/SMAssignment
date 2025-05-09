@@ -69,11 +69,11 @@ use {
 /// * `BitOrAssign`
 /// * `BitXor`
 /// * `BitXorAssign`
-/// * `Into<bool>`
-/// * `Into<[u8; 32]>`
-/// * `Into<Vec<u8>>`
-/// * `Into<[u64; 4]>`
-/// * `Into<Vec<u64>>`
+/// * `From<U256> -> bool`
+/// * `From<U256> -> [u8; 32]`
+/// * `From<U256> -> Vec<u8>`
+/// * `From<U256> -> [u64; 4]`
+/// * `From<U256> -> Vec<u64>`
 /// * `From<u8>`
 /// * `From<u16>`
 /// * `From<u32>`
@@ -97,11 +97,9 @@ use {
 /// * `u256.leading_zeros() -> usize` - 返回前导 0 的个数
 /// * `u256.highest_bit() -> usize` - 返回最高位的位置，通过 `256 -
 ///   u256.leading_zeros()` 计算
-/// * `u256.into_le_bytes() -> [u8; 32]` - 返回小端序字节数组，用于实现
-///   `Into<[u8; 32]>`
+/// * `u256.into_le_bytes() -> [u8; 32]` - 返回小端序字节数组
 /// * `u256.into_be_bytes() -> [u8; 32]` - 返回大端序字节数组
-/// * `u256.into_le_u64_array() -> [u64; 4]` - 返回小端序 u64 数组，用于实现
-///   `Into<[u64; 4]>`
+/// * `u256.into_le_u64_array() -> [u64; 4]` - 返回小端序 u64 数组
 /// * `u256.into_be_u64_array() -> [u64; 4]` - 返回大端序 u64 数组
 /// * `u256.random(rng: &mut impl CryptoRng) -> Self` - 返回一个随机数
 /// * `u256.random_in_range(rng: &mut impl CryptoRng, min: Self, max: Self) ->
@@ -455,9 +453,9 @@ impl U256 {
   }
 }
 
-impl Into<bool> for U256 {
-  fn into(self) -> bool {
-    self.0[3] != 0 || self.0[2] != 0 || self.0[1] != 0 || self.0[0] != 0
+impl From<U256> for bool {
+  fn from(value: U256) -> Self {
+    value.0[3] != 0 || value.0[2] != 0 || value.0[1] != 0 || value.0[0] != 0
   }
 }
 
@@ -886,26 +884,26 @@ impl TryFrom<&Vec<u64>> for U256 {
   }
 }
 
-impl Into<[u8; 32]> for U256 {
-  fn into(self) -> [u8; 32] {
-    self.into_le_bytes()
+impl From<U256> for [u8; 32] {
+  fn from(value: U256) -> Self {
+    value.into_le_bytes()
   }
 }
 
-impl Into<Vec<u8>> for U256 {
-  fn into(self) -> Vec<u8> {
-    self.into_le_bytes().to_vec()
+impl From<U256> for Vec<u8> {
+  fn from(value: U256) -> Self {
+    value.into_le_bytes().to_vec()
   }
 }
 
-impl Into<[u64; 4]> for U256 {
-  fn into(self) -> [u64; 4] {
-    self.into_le_u64_array()
+impl From<U256> for [u64; 4] {
+  fn from(value: U256) -> Self {
+    value.into_le_u64_array()
   }
 }
 
-impl Into<Vec<u64>> for U256 {
-  fn into(self) -> Vec<u64> {
-    self.into_le_u64_array().to_vec()
+impl From<U256> for Vec<u64> {
+  fn from(value: U256) -> Self {
+    value.into_le_u64_array().to_vec()
   }
 }

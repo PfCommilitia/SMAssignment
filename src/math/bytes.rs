@@ -22,7 +22,9 @@
 ///
 /// * `Clone`
 /// * `From<&[u8]>`
-/// * `Into<Vec<u8>>`
+/// * `From<BitSequence> -> Vec<u8>`
+/// * `PartialEq`
+/// * `Eq`
 ///
 /// ## 方法
 ///
@@ -33,6 +35,10 @@
 /// * `append_bits(&mut self, bits: &Self)` - 追加比特序列
 /// * `into_le_bytes(&self) -> Vec<u8>` - 转换为小端序字节序列
 /// * `len(&self) -> u64` - 获取比特序列的长度
+/// * `xor(&self, other: &Self) -> Result<Self, &'static str>` - 异或运算
+/// * `xor_inplace(&mut self, other: &Self) -> Result<(), &'static str>` -
+///   就地异或运算
+/// * `slice(&self, start: u64, end: u64) -> Result<Self, &'static str>` - 切片
 #[derive(Clone)]
 pub struct BitSequence {
   bytes: Vec<u8>,
@@ -142,6 +148,72 @@ impl BitSequence {
   pub fn len(&self) -> u64 {
     self.bytes.len() as u64 * 8 - 8 + self.last_byte_len as u64
   }
+
+  pub fn xor(&self, other: &Self) -> Result<Self, &'static str> {
+    if self.len() != other.len() {
+      return Err("Lengths of sequences to XOR must be equal");
+    }
+
+    let mut result = self.clone();
+
+    for i in 0 .. self.bytes.len() {
+      result.bytes[i] ^= other.bytes[i];
+    }
+
+    Ok(result)
+  }
+
+  pub fn xor_inplace(&mut self, other: &Self) -> Result<(), &'static str> {
+    if self.len() != other.len() {
+      return Err("Lengths of sequences to XOR must be equal");
+    }
+
+    for i in 0 .. self.bytes.len() {
+      self.bytes[i] ^= other.bytes[i];
+    }
+
+    Ok(())
+  }
+
+  pub fn slice(&self, start: u64, end: u64) -> Result<Self, &'static str> {
+    if start > end || end >= self.len() {
+      return Err("Invalid slice");
+    }
+
+    let mut current_byte = start / 8;
+    let byte_pos = start % 8;
+    let mut bits_remaining = end - start;
+
+    let mut bytes = Vec::new();
+
+    while bits_remaining >= 8 {
+      let mut byte = self.bytes[current_byte as usize] << byte_pos;
+      byte |= self.bytes[current_byte as usize + 1] >> (8 - byte_pos);
+
+      bytes.push(byte);
+      current_byte += 1;
+      bits_remaining -= 8;
+    }
+
+    if bits_remaining > 0 {
+      let mut byte = if 8 - byte_pos <= bits_remaining {
+        bits_remaining -= 8 - byte_pos;
+        self.bytes[current_byte as usize] << byte_pos
+      } else {
+        let temp = 8 - bits_remaining;
+        bits_remaining = 0;
+        self.bytes[current_byte as usize] << temp
+      };
+
+      if bits_remaining > 0 {
+        byte |= self.bytes[current_byte as usize + 1] >> (8 - bits_remaining);
+      }
+
+      bytes.push(byte);
+    }
+
+    Ok(BitSequence { bytes, last_byte_len: ((end - start) % 8) as u8 })
+  }
 }
 
 impl From<&[u8]> for BitSequence {
@@ -150,8 +222,19 @@ impl From<&[u8]> for BitSequence {
   }
 }
 
-impl Into<Vec<u8>> for BitSequence {
-  fn into(self) -> Vec<u8> {
-    self.bytes
+impl From<BitSequence> for Vec<u8> {
+  fn from(sequence: BitSequence) -> Self {
+    sequence.get_bytes().to_vec()
   }
+}
+
+impl PartialEq for BitSequence {
+  fn eq(&self, other: &Self) -> bool {
+    self.last_byte_len == other.last_byte_len
+      && self.bytes.len() == other.bytes.len()
+      && self.bytes == other.bytes
+  }
+}
+
+impl Eq for BitSequence {
 }

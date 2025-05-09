@@ -2,13 +2,12 @@
 
 ## 项目进度
 
-* [ ] SM2 椭圆曲线公钥密码算法
+* [x] SM2 椭圆曲线公钥密码算法
   * [x] 大整数数据类型
   * [x] 椭圆曲线基础运算
   * [x] 椭圆曲线公钥密码算法
   * [x] 椭圆曲线数字签名算法
   * [x] 椭圆曲线密钥交换协议
-  * [ ] 椭圆曲线认证协议
 * [x] SM3 密码杂凑算法
 * [x] SM4 分组密码算法
 * [ ] 测试
@@ -31,10 +30,13 @@ SMAssignment
 │   └── sm_4.rs      - SM4 相关模块
 ├── .gitignore
 ├── Cargo.toml
+├── Changelog.md
 ├── LICENSE
 ├── README.md
 └── rustfmt.toml
 ```
+
+从 v0.1.0 版本开始，commit 信息只包含版本号，详细信息请参考 [此文件](Changelog.md)。
 
 ## 构建
 
